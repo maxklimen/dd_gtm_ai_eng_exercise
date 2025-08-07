@@ -28,15 +28,31 @@ Each speaker page contains:
     <p><strong>Company:</strong> [Company Name]</p>
     <p><strong>Job Title:</strong> [Job Title]</p>
 </div>
+
+<div class="speaker-sessions">
+    <h3>Sessions</h3>
+    <ul>
+        <li><a href="[session-url]">[Session Title]</a></li>
+    </ul>
+</div>
+
+<meta property="og:image" content="[speaker-image-url]"/>
 ```
+
+### Enhanced Data Extraction
+- **398 speakers** successfully parsed
+- **472 total sessions** (60 speakers presenting multiple sessions)
+- **All speakers have profile images**
+- **12 speakers** with empty job titles (3%)
 
 ## Implementation Plan (Iterative Approach)
 
-### Step 1: Extract Speaker Data
+### Step 1: Extract Speaker Data ✅ COMPLETED
 - Parse HTML files using BeautifulSoup
-- Extract: Name, Company, Job Title
+- Extract: Name, Company, Job Title, Sessions, Image URLs
 - Save to JSON for processing
-- Handle edge cases (missing data)
+- Handle edge cases (missing data, empty job titles)
+- **Result**: 398 speakers with 472 sessions extracted
 
 ### Step 2: Enrich with Tavily API
 - Search for company + construction industry context
@@ -53,9 +69,11 @@ Each speaker page contains:
 - Personalize body based on:
   - Company category
   - Person's role/title
+  - Session topics (reference their talks)
   - Company's specific needs
 - Emphasize booth #42 and free gift
 - Keep professional but engaging tone
+- Multi-session speakers get special recognition
 
 ### Step 5: Export to CSV
 - Required columns:
@@ -116,14 +134,17 @@ dd_gtm_ai_eng_exercise/
 
 ### Completed
 - ✅ Project structure created
+- ✅ Enhanced parser with session & image extraction (398 speakers, 472 sessions)
 - ✅ All utility modules implemented (parser, enrichment, classifier, email_generator)
 - ✅ Main orchestration script ready
-- ✅ Documentation setup
+- ✅ Email generator updated to reference speaker sessions
+- ✅ Documentation updated with latest findings
 
 ### Next Steps
-- 🔄 Test with real API keys
-- 🔄 Run full pipeline on sample data
-- 🔄 Refine email templates based on results
+- 🔄 Install dependencies: `pip install -r requirements.txt`
+- 🔄 Configure API keys in `.env` file
+- 🔄 Run full pipeline: `python3 main.py`
+- 🔄 Review generated emails in `out/email_list.csv`
 
 ## Implementation Decisions
 
@@ -153,5 +174,10 @@ dd_gtm_ai_eng_exercise/
 - Implemented all modules
 - Set up documentation system
 
-### Session 2 (Your next session)
-- [Updates will go here]
+### Session 2 (Enhanced Parser Implementation)
+- Discovered all 398 speakers have session data (472 total sessions)
+- Found 60 speakers presenting at multiple sessions (15.1%)
+- Extracted speaker image URLs from meta tags (100% coverage)
+- Updated parser to capture sessions, images, and bio fields
+- Enhanced email generator to reference speaker sessions
+- Identified multi-session speakers as high-value targets

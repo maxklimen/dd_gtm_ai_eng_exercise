@@ -26,11 +26,12 @@ class EmailGenerator:
             raise ValueError("No LLM API key found. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY")
     
     def _create_email_prompt(self, speaker_data: Dict) -> str:
-        """Create prompt for email generation"""
+        """Create prompt for email generation with session awareness"""
         name = speaker_data["name"]
         company = speaker_data["company"]
         job_title = speaker_data["job_title"]
         category = speaker_data["category"]
+        sessions = speaker_data.get("sessions", [])
         
         # Category-specific messaging
         category_messaging = {
@@ -40,19 +41,28 @@ class EmailGenerator:
         
         context = category_messaging.get(category, "DroneDeploy's construction solutions help organizations capture, analyze, and share reality data from their job sites.")
         
+        # Build session context
+        session_context = ""
+        if sessions:
+            if len(sessions) == 1:
+                session_context = f"\n- Speaking session: {sessions[0]['title']}"
+            elif len(sessions) > 1:
+                session_context = f"\n- Speaking at {len(sessions)} sessions including: {sessions[0]['title']}"
+        
         prompt = f"""Generate a personalized email to invite a conference speaker to visit our booth #42 at Digital Construction Week.
 
 Speaker Information:
 - Name: {name}
 - Company: {company}
 - Job Title: {job_title}
-- Category: {category}
+- Category: {category}{session_context}
 
 Context: {context}
 
 Requirements:
 - Subject line should be compelling and relevant to their role/company
 - Email body should be 3-4 sentences
+- If they have sessions, reference their talk(s) naturally
 - Mention booth #42 and free gift
 - Professional but engaging tone
 - Focus on specific value for their role/company type
