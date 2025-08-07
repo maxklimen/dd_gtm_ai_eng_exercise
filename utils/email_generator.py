@@ -83,8 +83,8 @@ Provide the email in the following JSON format:
         Returns:
             Dictionary with subject and body
         """
-        # Skip competitors and partners
-        if speaker_data["category"] in ["Competitor", "Partner"]:
+        # Skip competitors, partners, and existing customers
+        if speaker_data["category"] in ["Competitor", "Partner", "Customer"]:
             return {
                 "subject": "",
                 "body": ""

@@ -10,7 +10,7 @@ import json
 class CompanyClassifier:
     """Classify companies into categories using LLM"""
     
-    CATEGORIES = ["Builder", "Owner", "Partner", "Competitor", "Other"]
+    CATEGORIES = ["Builder", "Owner", "Partner", "Competitor", "Customer", "Other"]
     
     def __init__(self):
         load_dotenv()
@@ -29,8 +29,8 @@ class CompanyClassifier:
     
     def _create_classification_prompt(self, enriched_data: Dict) -> str:
         """Create prompt for classification"""
-        company = enriched_data["company"]
-        job_title = enriched_data["job_title"]
+        company = enriched_data.get("company", "Unknown Company")
+        job_title = enriched_data.get("job_title", "")
         search_results = enriched_data.get("search_results", [])
         
         # Compile search results into context
@@ -41,13 +41,19 @@ class CompanyClassifier:
         
         prompt = f"""Based on the following information about a company, classify it into one of these categories:
 
-1. Builder - General contractors, specialty contractors, engineering firms, construction companies that physically build projects
-2. Owner - Property owners, developers, real estate companies, government agencies that commission construction projects
-3. Partner - Technology vendors, software companies, consultants that could partner with DroneDeploy
-4. Competitor - Companies that offer drone services, aerial imagery, or competing construction tech solutions
-5. Other - Doesn't fit the above categories or unclear
+1. Builder - Construction companies, general contractors, specialty contractors, engineering firms that PHYSICALLY BUILD projects. Examples: Multiplex, Laing O'Rourke, Turner Construction, AECOM (construction division)
+2. Owner - Property owners, developers, real estate companies, government agencies that COMMISSION/OWN construction projects
+3. Partner - Software companies, technology vendors, consultants that don't build but provide tools/services. Examples: Autodesk, Trimble, Oracle, Microsoft
+4. Competitor - Companies offering drone services, aerial imagery, or competing construction tech (Propeller, Pix4D, Skycatch)
+5. Customer - EXISTING DroneDeploy customers (look for mentions of "partnership with DroneDeploy", "uses DroneDeploy", "DroneDeploy customer")
+6. Other - Doesn't fit clearly into above categories
 
 {context}
+
+IMPORTANT: 
+- If search results mention the company has a partnership with DroneDeploy or uses DroneDeploy, classify as CUSTOMER
+- If the company name contains "Construction", "Contractors", "Engineering" they are likely a BUILDER (unless they're already a DroneDeploy customer)
+- Kier Group is a known DroneDeploy customer (enterprise agreement mentioned)
 
 DroneDeploy provides drone-based reality capture and aerial data analytics for construction sites.
 
