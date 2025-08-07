@@ -1,0 +1,18 @@
+# DroneDeploy GTM Exercise Dependencies
+
+# Core dependencies
+aiohttp==3.9.1
+asyncio==3.4.3
+beautifulsoup4==4.12.2
+python-dotenv==1.0.0
+pandas==2.1.4
+tqdm==4.66.1
+
+# API clients
+openai==1.6.1
+anthropic==0.8.1
+tavily-python==0.3.0
+
+# Utilities
+requests==2.31.0
+lxml==4.9.3
