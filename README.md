@@ -2,16 +2,18 @@
 
 An AI-powered pipeline that generates personalized outbound emails for conference speakers, targeting potential DroneDeploy customers at Digital Construction Week.
 
+> **For implementation details and results**: See [SUBMISSION_NOTES.md](SUBMISSION_NOTES.md)
+
 ## 🎯 Overview
 
-This system processes 398 conference speakers, enriches their company information, classifies them into customer categories, and generates personalized emails inviting them to visit booth #42 for a demo and free gift.
+This system processes conference speakers, enriches their company information, classifies them into customer categories, and generates personalized emails inviting potential customers to visit booth #42 for a demo and free gift.
 
 **Key Features:**
-- ⚡ Processes 398 speakers in ~12 minutes
+- ⚡ Processes hundreds of speakers with parallel API calls
 - 🔄 Resume capability with checkpoint system
-- 🤖 Supports multiple LLMs (OpenAI GPT-4.1, Anthropic Claude)
-- 📊 Intelligent company classification
-- ✉️ Personalized email generation
+- 🤖 Supports multiple LLMs (OpenAI GPT-4, Anthropic Claude)
+- 📊 Intelligent company classification (Builder/Owner/Partner/Competitor/Customer)
+- ✉️ Personalized email generation based on role and company type
 
 ## 📋 Requirements
 
@@ -110,30 +112,36 @@ If the pipeline is interrupted, resume from the last checkpoint:
 python main.py --classify --resume
 ```
 
-## ⚡ Performance & Results
+## ⚡ Performance
 
-### Final Results (COMPLETE)
-- **Total Speakers Processed**: 398 speakers (ALL speakers from conference)
-- **Emails Generated**: 118 personalized emails
-  - 95 for Builders (general contractors, construction companies) - 100% coverage
-  - 23 for Owners (property developers, government agencies) - 100% coverage
-- **Classifications**:
-  - Partner: 159 (software/consulting - excluded from emails)
-  - Other: 106 (non-construction industry - excluded)
-  - Builder: 95 (ALL received emails)
-  - Owner: 23 (ALL received emails)
-  - Customer: 10 (existing DroneDeploy customers - excluded)
-  - Competitor: 5 (competing solutions - excluded)
+The pipeline processes speakers in three stages with checkpointing:
 
-### Performance Metrics
-With GPT-4.1-mini (recommended):
-- **Total Time**: ~15-20 minutes for full pipeline
-- **Enrichment**: 1.2 min (5.5 speakers/sec with caching)
-- **Classification**: 10-12 min (batch processing with checkpoints)
-- **Email Generation**: 2-3 min (98 emails total)
-- **Cost**: ~$0.80 total
+1. **Classification Stage**: ~10-12 minutes for 400 speakers
+2. **Email Generation Stage**: ~2-3 minutes for 100-150 emails  
+3. **Export Stage**: <1 minute
 
-**Note**: Pipeline uses checkpoint/resume system to handle environment timeouts. Run in stages if processing large batches.
+**Total Runtime**: ~15-20 minutes for complete pipeline
+
+### Resource Usage
+- **API Costs**: ~$0.80 for 400 speakers
+- **Memory**: <500MB
+- **Network**: Moderate (API calls are rate-limited)
+
+The pipeline includes checkpoint/resume capability to handle interruptions and can be run in stages for large datasets.
+
+**Note**: For actual development timeline and lessons learned, see [SUBMISSION_NOTES.md](SUBMISSION_NOTES.md)
+
+## 📊 Output Format
+
+The pipeline generates `out/email_list.csv` with the following columns:
+- **Speaker Name**: Full name of the speaker
+- **Speaker Title**: Job title/role
+- **Speaker Company**: Company name
+- **Company Category**: Classification (Builder/Owner/Partner/Competitor/Customer/Other)
+- **Email Subject**: Personalized subject line (empty for non-targets)
+- **Email Body**: Personalized email content (empty for non-targets)
+
+Only Builders and Owners receive personalized emails. Partners, Competitors, Customers, and Others are classified but excluded from outreach.
 
 ## 🏗️ Architecture
 
@@ -206,26 +214,15 @@ The system scales linearly:
 - The pipeline processes in batches to manage memory
 - Default batch sizes are optimized for standard systems
 
-## 🚧 Current Limitations & Future Improvements
+## 📝 Documentation
 
-### Recent Fixes
-- ✅ **Fixed deduplication bug in stage1_classify.py** (lines 40-43, 56-58, 100-101)
-  - **Problem**: Was tracking by company only, skipping speakers from same company
-  - **Impact**: Only 315 of 398 speakers were processed
-  - **Solution**: Now tracks unique speaker IDs (name + company)
-  - **Result**: All 398 speakers properly processed
+- **[SUBMISSION_NOTES.md](SUBMISSION_NOTES.md)** - Development timeline, lessons learned, and future improvements
+- **[CLAUDE.md](CLAUDE.md)** - Project context and persistent memory for AI assistants
 
-### Current Limitations
-- Environment timeout constraints require staged execution
-- Could be 40x faster with proper parallelization (currently using ~2% of API capacity)
+## 🐛 Known Issues
 
-### Future Improvements
-- Enhanced parallelization for faster processing
-- Better prompt engineering for more accurate classifications
-- Deduplication logic for speakers with multiple sessions
-- Real-time progress dashboard
-- A/B testing framework for email templates
-- Integration with CRM systems for automated outreach
+- Environment timeout constraints may require staged execution for very large datasets
+- API rate limits are conservatively set (see [SUBMISSION_NOTES.md](SUBMISSION_NOTES.md) for optimization potential)
 
 ## 📝 License
 
