@@ -103,27 +103,35 @@ class CompanyEnricher:
         Returns:
             List of enriched speaker data
         """
-        tasks = []
-        for speaker in speakers:
-            task = self.enrich_company(
-                speaker["company"],
-                speaker["name"],
-                speaker["job_title"]
-            )
-            tasks.append(task)
+        enriched_speakers = []
         
-        # Run enrichment in parallel with some concurrency limit
-        enriched_results = []
-        for i in range(0, len(tasks), 5):  # Process 5 at a time
-            batch = tasks[i:i+5]
-            batch_results = await asyncio.gather(*batch)
-            enriched_results.extend(batch_results)
+        # Process speakers in batches of 5
+        for i in range(0, len(speakers), 5):
+            batch = speakers[i:i+5]
+            tasks = []
+            
+            for speaker in batch:
+                task = self.enrich_company(
+                    speaker["company"],
+                    speaker.get("name", ""),
+                    speaker.get("job_title", "")
+                )
+                tasks.append(task)
+            
+            # Run batch enrichment
+            batch_results = await asyncio.gather(*tasks)
+            
+            # Merge enrichment data with original speaker data
+            for speaker, enrichment in zip(batch, batch_results):
+                enriched_speaker = speaker.copy()  # Keep all original data
+                enriched_speaker.update(enrichment)  # Add enrichment data
+                enriched_speakers.append(enriched_speaker)
             
             # Small delay to avoid rate limiting
-            if i + 5 < len(tasks):
+            if i + 5 < len(speakers):
                 await asyncio.sleep(1)
         
-        return enriched_results
+        return enriched_speakers
 
 
 # Example usage
