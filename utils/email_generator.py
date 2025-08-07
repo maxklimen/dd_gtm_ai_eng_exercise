@@ -2,6 +2,7 @@
 Email generator for personalized outreach to conference speakers
 """
 import os
+import asyncio
 from typing import Dict, List
 from dotenv import load_dotenv
 import json
@@ -95,7 +96,7 @@ Provide the email in the following JSON format:
         try:
             if hasattr(self.llm_client, 'chat'):  # OpenAI
                 response = self.llm_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
+                    model="gpt-4.1-mini-2025-04-14",
                     messages=[
                         {"role": "system", "content": "You are an expert at writing compelling B2B outreach emails for the construction technology industry."},
                         {"role": "user", "content": prompt}
@@ -106,7 +107,7 @@ Provide the email in the following JSON format:
                 result = json.loads(response.choices[0].message.content)
             else:  # Anthropic
                 response = self.llm_client.messages.create(
-                    model="claude-3-opus-20240229",
+                    model="claude-sonnet-4-20250514",
                     messages=[
                         {"role": "user", "content": prompt}
                     ],
@@ -131,26 +132,48 @@ Provide the email in the following JSON format:
                 "body": ""
             }
     
-    async def generate_emails_batch(self, classified_speakers: List[Dict]) -> List[Dict]:
+    async def generate_emails_batch(self, classified_speakers: List[Dict], batch_size: int = 5) -> List[Dict]:
         """
-        Generate emails for multiple speakers
+        Generate emails for multiple speakers in parallel batches
+        
+        Args:
+            classified_speakers: List of classified speaker data
+            batch_size: Number of concurrent email generations (default 5)
         
         Returns:
             List of speakers with email subject and body added
         """
         speakers_with_emails = []
+        total = len(classified_speakers)
+        emails_to_generate = sum(1 for s in classified_speakers if s.get("category") in ["Builder", "Owner"])
+        emails_generated = 0
         
-        for speaker_data in classified_speakers:
-            email = await self.generate_email(speaker_data)
+        # Process in batches for better performance
+        for i in range(0, total, batch_size):
+            batch = classified_speakers[i:i+batch_size]
             
-            # Add email to speaker data
-            speaker_data["email_subject"] = email["subject"]
-            speaker_data["email_body"] = email["body"]
+            # Create email generation tasks for parallel execution
+            tasks = []
+            for speaker_data in batch:
+                tasks.append(self.generate_email(speaker_data))
             
-            speakers_with_emails.append(speaker_data)
+            # Run email generation in parallel
+            emails = await asyncio.gather(*tasks)
             
-            if email["subject"]:  # Only log if email was generated
-                print(f"Generated email for {speaker_data['name']} at {speaker_data['company']}")
+            # Merge email results with speaker data
+            for speaker_data, email in zip(batch, emails):
+                speaker_data["email_subject"] = email["subject"]
+                speaker_data["email_body"] = email["body"]
+                
+                speakers_with_emails.append(speaker_data)
+                
+                if email["subject"]:  # Only log if email was generated
+                    emails_generated += 1
+                    print(f"[{emails_generated}/{emails_to_generate}] Generated email for {speaker_data['name']} at {speaker_data['company']}")
+            
+            # Small delay between batches to avoid rate limiting
+            if i + batch_size < total:
+                await asyncio.sleep(0.5)
         
         return speakers_with_emails
 

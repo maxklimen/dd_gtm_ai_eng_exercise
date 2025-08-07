@@ -132,19 +132,25 @@ dd_gtm_ai_eng_exercise/
 
 ## Progress Tracker
 
-### Completed
-- ✅ Project structure created
-- ✅ Enhanced parser with session & image extraction (398 speakers, 472 sessions)
-- ✅ All utility modules implemented (parser, enrichment, classifier, email_generator)
-- ✅ Main orchestration script ready
-- ✅ Email generator updated to reference speaker sessions
-- ✅ Documentation updated with latest findings
+### ✅ FINAL RESULTS (4 hours total)
+- **398 speakers processed** (ALL speakers from HTML files)
+- **118 personalized emails generated**:
+  - 95 for Builders (100% coverage)
+  - 23 for Owners (100% coverage)
+- **270 unique companies** identified
+- **Categories**:
+  - Partner: 159 (excluded from emails)
+  - Other: 106 (excluded from emails)
+  - Builder: 95 (ALL with emails)
+  - Owner: 23 (ALL with emails)
+  - Customer: 10 (existing DroneDeploy users - excluded)
+  - Competitor: 5 (excluded)
 
-### Next Steps
-- 🔄 Install dependencies: `pip install -r requirements.txt`
-- 🔄 Configure API keys in `.env` file
-- 🔄 Run full pipeline: `python3 main.py`
-- 🔄 Review generated emails in `out/email_list.csv`
+### Timeline Breakdown
+- **30 min**: Initial structure & core implementation
+- **1.5 hours**: Testing, API integration, running pipeline
+- **2 hours**: Debugging company deduplication bug
+- **30 min**: Final optimization & documentation
 
 ## Implementation Decisions
 
@@ -181,3 +187,20 @@ dd_gtm_ai_eng_exercise/
 - Updated parser to capture sessions, images, and bio fields
 - Enhanced email generator to reference speaker sessions
 - Identified multi-session speakers as high-value targets
+
+### Session 3 (Full Pipeline & Bug Fixes - 4 hours)
+- **Critical Bug Found**: Stage1 classifier was deduplicating by company, not speaker
+  - Impact: Only 315 of 398 speakers processed
+  - Fix: Track speakers by name+company ID
+- **Performance Analysis**: Current pipeline uses only ~2% of API rate limits
+  - Could achieve 40x speedup with proper parallelization
+  - Designed optimized architecture (not implemented due to time)
+- **Final Achievement**: ALL 398 speakers processed, 118 emails generated
+
+## Key Lessons Learned
+
+1. **Planning is Critical**: Spending more time upfront on orchestration design would have avoided the deduplication bug
+2. **Calculate API Limits First**: We were using 1 req/sec when we could use 80 req/sec
+3. **Test Data Flow Early**: The bug would have been caught with proper testing of intermediate results
+4. **Checkpoint Systems Essential**: Saved us from losing work during timeouts
+5. **Cache Everything**: Tavily cache saved significant API costs during debugging

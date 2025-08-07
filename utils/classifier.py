@@ -2,6 +2,7 @@
 Company classifier using LLM to categorize companies
 """
 import os
+import asyncio
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
 import json
@@ -78,7 +79,7 @@ Provide your classification in the following JSON format:
         try:
             if hasattr(self.llm_client, 'chat'):  # OpenAI
                 response = self.llm_client.chat.completions.create(
-                    model="gpt-4-turbo-preview",
+                    model="gpt-4.1-mini-2025-04-14",
                     messages=[
                         {"role": "system", "content": "You are an expert at classifying companies in the construction industry."},
                         {"role": "user", "content": prompt}
@@ -89,7 +90,7 @@ Provide your classification in the following JSON format:
                 result = json.loads(response.choices[0].message.content)
             else:  # Anthropic
                 response = self.llm_client.messages.create(
-                    model="claude-3-opus-20240229",
+                    model="claude-sonnet-4-20250514",
                     messages=[
                         {"role": "user", "content": prompt}
                     ],
@@ -120,27 +121,46 @@ Provide your classification in the following JSON format:
                 "confidence": 0.0
             }
     
-    async def classify_batch(self, enriched_speakers: List[Dict]) -> List[Dict]:
+    async def classify_batch(self, enriched_speakers: List[Dict], batch_size: int = 5) -> List[Dict]:
         """
-        Classify multiple companies
+        Classify multiple companies in parallel batches
+        
+        Args:
+            enriched_speakers: List of enriched speaker data
+            batch_size: Number of concurrent classifications (default 5)
         
         Returns:
             List of speakers with classification added
         """
         classified_speakers = []
+        total = len(enriched_speakers)
         
-        for speaker_data in enriched_speakers:
-            classification = await self.classify_company(speaker_data)
+        # Process in batches for better performance
+        for i in range(0, total, batch_size):
+            batch = enriched_speakers[i:i+batch_size]
             
-            # Add classification to speaker data
-            speaker_data["category"] = classification["category"]
-            speaker_data["classification_reasoning"] = classification["reasoning"]
-            speaker_data["classification_confidence"] = classification["confidence"]
+            # Create classification tasks for parallel execution
+            tasks = []
+            for speaker_data in batch:
+                tasks.append(self.classify_company(speaker_data))
             
-            classified_speakers.append(speaker_data)
+            # Run classifications in parallel
+            classifications = await asyncio.gather(*tasks)
             
-            print(f"Classified {speaker_data['company']} as {classification['category']} "
-                  f"(confidence: {classification['confidence']:.2f})")
+            # Merge classification results with speaker data
+            for speaker_data, classification in zip(batch, classifications):
+                speaker_data["category"] = classification["category"]
+                speaker_data["classification_reasoning"] = classification["reasoning"]
+                speaker_data["classification_confidence"] = classification["confidence"]
+                
+                classified_speakers.append(speaker_data)
+                
+                print(f"[{len(classified_speakers)}/{total}] Classified {speaker_data['company']} as {classification['category']} "
+                      f"(confidence: {classification['confidence']:.2f})")
+            
+            # Small delay between batches to avoid rate limiting
+            if i + batch_size < total:
+                await asyncio.sleep(0.5)
         
         return classified_speakers
 
